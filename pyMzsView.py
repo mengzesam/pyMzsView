@@ -1,6 +1,7 @@
 import sys
 import pandas
 import numpy
+import datetime
 from PyQt5.QtCore import Qt,QCoreApplication
 from PyQt5.QtWidgets import (
     QApplication,QMainWindow,QMessageBox,QFileDialog,QTableWidget,QTableWidgetItem,QDialog
@@ -16,6 +17,7 @@ else:
 from matplotlib.figure import Figure
 from Ui_PyMzsView import Ui_MainWindow
 from pyDataSetting import DataSettingDialog
+
 
 class PyMzsView(QMainWindow):    
     TABLE_COLS=12
@@ -115,25 +117,29 @@ class PyMzsView(QMainWindow):
         self.ax.set_ylim([-1.2,1.2])
 
     def loadData(self):
-        self.dataframe=pandas.read_csv(self.SETTINGDLG.srcfile,
-            sep=self.SETTINGDLG.delimiter,
-            skipinitialspace=True,
-            skip_blank_lines=True,
-            skiprows=self.SETTINGDLG.datastart,
-            header=None,
-            index_col=False,
-            usecols=[self.SETTINGDLG.XColIndex]+self.SETTINGDLG.YColIndexs,
-            nrows=self.SETTINGDLG.MAXROW
-        )
-        nrows,ncols=self.dataframe.shape
-        n=min(ncols-1,self.TABLE_ROWS)
-        x=self.dataframe.iloc[:,0]
-        print(x)
-        for i in range(n):
-            self.lines[i].set_data(x,self.dataframe.iloc[:,1+i])        
-        self.ax.set_ylim([-1.2,5.2])
-        self.fig.canvas.draw()
-        
+        try:            
+            self.dataframe=pandas.read_csv(self.SETTINGDLG.srcfile,
+                sep=self.SETTINGDLG.delimiter,
+                skipinitialspace=True,
+                skip_blank_lines=True,
+                skiprows=self.SETTINGDLG.datastart,
+                header=None,
+                index_col=False,
+                usecols=[self.SETTINGDLG.XColIndex]+self.SETTINGDLG.YColIndexs,
+                nrows=self.SETTINGDLG.MAXROW
+            )
+            nrows,ncols=self.dataframe.shape
+            n=min(ncols-1,self.TABLE_ROWS)
+            x=self.dataframe.iloc[:,0]
+            x=pandas.to_datetime(x)#,format=self.SETTINGDLG.timeformat)
+            self.ax.set_xlim([numpy.min(x),numpy.max(x)])
+            for i in range(n):
+                self.lines[i].set_data(x,self.dataframe.iloc[:,1+i])        
+            self.ax.set_ylim([0,1000])
+            self.fig.canvas.draw()
+        except Exception as e:
+            QMessageBox.warning(self,"Error!",format(e))
+                
     def onFigMove(self,event):
         if event.inaxes != self.ax: return
         x=event.xdata
